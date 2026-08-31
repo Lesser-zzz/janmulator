@@ -44,7 +44,6 @@ class YanModel {
     this.stacks = 0;
   }
 
-  // Actual cooldown after the permanent 30% item cooldown reduction.
   getEffectiveCooldown(key) {
     const s=this.skills[key];
     return s.baseCooldown * (1-this.baseCooldownReduction);
@@ -72,10 +71,6 @@ class YanModel {
     };
   }
 
-  // Important:
-  // Enhanced cooldown effects subtract a percentage of the FULL EFFECTIVE
-  // cooldown (after the permanent 30% item CDR), not a percentage of the
-  // remaining cooldown.
   reduceByEffectiveFullCooldown(key, ratio) {
     const s=this.skills[key];
     if(!s || s.cooldown<=0)return 0;
@@ -104,19 +99,11 @@ class YanModel {
     this.skills[key].cooldown=this.getEffectiveCooldown(key);
   }
 
-  /*
-   * Q is a two-stage skill.
-   * Q1 starts a 3-second Q2 window.
-   * Q2 inside that window immediately starts Q cooldown.
-   * If Q2 is not used for 3 seconds, the window expires and Q cooldown
-   * starts automatically.
-   */
   castQ() {
     const q=this.skills.Q;
 
     if(q.state==="q2"){
       const enhanced=q.enhanced;
-
       q.state="ready";
       q.q2Timer=0;
       q.startingFromQ1=false;
@@ -125,7 +112,6 @@ class YanModel {
 
       let cooldownResult=null;
       if(enhanced){
-        this.consumeEnhanced();
         cooldownResult=this.applyEnhancedCooldownReduction();
       }
 
@@ -138,6 +124,10 @@ class YanModel {
     }
 
     const enhanced=this.enhancedReady;
+    if (enhanced) {
+      this.consumeEnhanced();
+    }
+    
     q.state="q2";
     q.q2Timer=q.q2Window;
     q.enhanced=enhanced;
@@ -152,6 +142,10 @@ class YanModel {
     }
 
     const enhanced=this.enhancedReady;
+    if (enhanced) {
+      this.consumeEnhanced();
+    }
+
     w.pending=w.castDelay;
     w.enhanced=enhanced;
     return {ok:true,enhanced};
@@ -167,7 +161,6 @@ class YanModel {
 
     let cooldownResult=null;
     if(enhanced){
-      this.consumeEnhanced();
       cooldownResult=this.applyEnhancedCooldownReduction();
     }
 
@@ -189,8 +182,6 @@ class YanModel {
     if(enhanced){
       this.consumeEnhanced();
       cooldownResult=this.applyEnhancedCooldownReduction();
-
-      // Enhanced E gets an additional 40% of the FULL EFFECTIVE E cooldown.
       eExtra=this.applyEnhancedEReduction();
     }
 
@@ -198,7 +189,6 @@ class YanModel {
   }
 
   castR() {
-    // User-requested training rule: R has no cooldown and immediately grants 5 stacks.
     const stacks=this.addStack(5);
     return {ok:true,enhanced:false,stacks};
   }
@@ -214,7 +204,6 @@ class YanModel {
       q.q2Timer-=dt;
 
       if(q.q2Timer<=0){
-        // Q2 window expired: automatically begin Q's effective cooldown.
         q.q2Timer=0;
         q.state="ready";
         q.enhanced=false;
