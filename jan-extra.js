@@ -4,19 +4,23 @@
 (function(){
   const tacticalHud = document.getElementById("skillD");
   const weaponHud = document.getElementById("skillF");
+  const PIXELS_PER_METER = cfg.E_DISTANCE / 3.0;
 
   function formatTime(t){
     return t > 0 ? t.toFixed(1) : "READY";
   }
 
   function updateExtraHud(){
+    const multiplier=jan.getMoveSpeedMultiplier();
+    state.player.moveSpeed=245*multiplier;
+
     if(tacticalHud){
       const t=jan.tactical;
       tacticalHud.innerHTML=`
         <div class="skill-key">D</div>
         ${t.enhancedTimer>0?'<div class="skill-tag">MODULE</div>':''}
         <div class="skill-name">BLINK</div>
-        <div class="skill-time">${formatTime(t.cooldown)}</div>`;
+        <div class="skill-time">READY</div>`;
       tacticalHud.style.display="block";
       tacticalHud.style.visibility="visible";
       tacticalHud.style.opacity="1";
@@ -43,7 +47,9 @@
     const len=Math.hypot(dx,dy);
 
     if(len>0){
-      const distance=Math.min(result.distance,len);
+      // 3m is represented by the same 125px used by Jan's E 3m dash.
+      const maxDistance=result.distance*PIXELS_PER_METER;
+      const distance=Math.min(maxDistance,len);
       const nx=dx/len;
       const ny=dy/len;
       const oldX=p.x;
@@ -67,7 +73,7 @@
       });
     }
 
-    log(`<b>블링크</b> · ${result.distance.toFixed(1)}m 순간이동 · 2.5초 이동속도 +15%`);
+    log(`<b>블링크</b> · 최대 ${result.distance.toFixed(1)}m 순간이동 · 2.5초 이동속도 +15%`);
     updateExtraHud();
   }
 
@@ -78,7 +84,8 @@
     }
 
     const target=nearestDummyToPoint(state.mouse);
-    if(!target || distance(state.player,target)>jan.weapon.range+target.r){
+    const maxRange=jan.weapon.range*PIXELS_PER_METER;
+    if(!target || distance(state.player,target)>maxRange+target.r){
       log(`어퍼컷 사용 불가 · 사거리 ${jan.weapon.range.toFixed(2)}m`);
       return;
     }
@@ -86,6 +93,8 @@
     const result=jan.castUppercut();
     if(!result.ok)return;
 
+    // Damage is intentionally omitted. The trainer only needs the hit event
+    // to generate one passive stack.
     hitDummy(target,"어퍼컷");
     state.player.target=target;
     faceAt(target);
@@ -105,8 +114,6 @@
     }
   });
 
-  // game.js owns the main animation loop; this lightweight HUD refresh keeps
-  // D/F state visible without touching the stable movement implementation.
   setInterval(updateExtraHud,50);
   updateExtraHud();
 })();
