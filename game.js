@@ -65,8 +65,6 @@ function log(text){
 }
 
 function pointFromEvent(e){
-  // Keep the exact v0.3 approach: CSS canvas size is converted back to the
-  // fixed internal 1280x720 coordinate system.
   const rect=canvas.getBoundingClientRect();
   return {
     x:(e.clientX-rect.left)*canvas.width/rect.width,
@@ -153,8 +151,6 @@ function finishBasicAttack(){
 }
 
 function issueMove(point){
-  // This is deliberately based on the working v0.3 movement logic.
-  // RMB does only one thing: move to the clicked point.
   state.player.destination={x:point.x,y:point.y};
   state.player.target=null;
   state.player.attackMove=false;
@@ -164,8 +160,6 @@ function issueMove(point){
 }
 
 function issueAttack(point){
-  // A-click does NOT move to the clicked location.
-  // It chooses the dummy nearest to the mouse location and attacks it.
   const target=nearestDummyToPoint(point);
   if(!target)return;
 
@@ -193,7 +187,6 @@ function updatePlayer(dt){
     return;
   }
 
-  // Attack-target state.
   if(p.attackMove && p.target){
     const target=p.target;
 
@@ -212,7 +205,6 @@ function updatePlayer(dt){
     return;
   }
 
-  // Pure movement state.
   if(p.destination){
     const dx=p.destination.x-p.x;
     const dy=p.destination.y-p.y;
@@ -232,7 +224,6 @@ function updatePlayer(dt){
     p.x+=dx/len*step;
     p.y+=dy/len*step;
 
-    // Keep the player inside the actual canvas area.
     p.x=Math.max(p.r,Math.min(canvas.width-p.r,p.x));
     p.y=Math.max(p.r,Math.min(canvas.height-p.r,p.y));
   }
@@ -353,6 +344,10 @@ function castE(){
     log(`E 사용 불가 · 쿨다운 ${yan.skills.E.cooldown.toFixed(1)}s`);
     return;
   }
+
+  state.player.attackCooldown = 0; 
+  state.player.windup = 0;       
+  state.player.windupTarget = null;
 
   const oldX=state.player.x;
   const oldY=state.player.y;
@@ -571,7 +566,6 @@ function drawPlayer(){
 }
 
 function drawTelegraphs(){
-  // Q current facing rectangle
   if(yan.skills.Q.state==="q2"){
     ctx.save();
     ctx.translate(state.player.x,state.player.y);
@@ -582,7 +576,6 @@ function drawTelegraphs(){
     ctx.restore();
   }
 
-  // W waiting indicator: sector-like cone.
   for(const t of state.telegraph){
     ctx.save();
     ctx.translate(t.x,t.y);
@@ -720,8 +713,6 @@ function reset(){
   log("훈련장 초기화");
 }
 
-// Keyboard: only ability keys + A modifier.
-// Movement is intentionally mouse-command based.
 window.addEventListener("keydown",e=>{
   const k=e.key.toLowerCase();
 
@@ -745,8 +736,6 @@ window.addEventListener("keyup",e=>{
   }
 });
 
-// v0.3-style RMB movement: use the mouse event itself.
-// This avoids relying on browser contextmenu behavior for the actual order.
 canvas.addEventListener("mousedown",e=>{
   if(e.button===2){
     e.preventDefault();
@@ -763,7 +752,6 @@ canvas.addEventListener("mousedown",e=>{
     return;
   }
 
-  // Convenience: clicking an in-range dummy directly starts a basic attack.
   const target=dummyAt(point);
   if(target && attackRangeEnough(target)){
     beginBasicAttack(target);
