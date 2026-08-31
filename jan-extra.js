@@ -122,8 +122,24 @@
     const beforeR=jan.skills.R.cooldown;
     const beforeQState=jan.skills.Q.state;
     const beforeWPending=jan.skills.W.pending;
+    const telegraphCountBefore=state.telegraph.length;
 
     originalCastSkill(key);
+
+    // If W is waiting for its delayed hit and E was inserted before it lands,
+    // move the W cone's origin to Yan's NEW position. Its direction stays the
+    // same as when W was initially cast. This is the intended WE behavior.
+    if(key==="E" && state.telegraph.length>telegraphCountBefore){
+      // Defensive fallback for unusual ordering; normally W already exists.
+    }
+    if(key==="E" && state.telegraph.length>0){
+      for(const t of state.telegraph){
+        if(t.type==="W"){
+          t.x=state.player.x;
+          t.y=state.player.y;
+        }
+      }
+    }
 
     let succeeded=false;
     if(key==="Q") succeeded=beforeQState!==jan.skills.Q.state || beforeQ!==jan.skills.Q.cooldown;
@@ -136,7 +152,6 @@
 
   function blink(){
     if(state.player.skillRecovery>0){
-      // E is not used here; Blink remains a tactical skill and respects recovery.
       log(`블링크 사용 불가 · 스킬 후딜 ${state.player.skillRecovery.toFixed(2)}s`);
       return;
     }
