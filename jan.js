@@ -2,6 +2,7 @@ class JanModel {
   constructor() {
     this.maxStacks = 10;
     this.enhancedThreshold = 5;
+
     this.baseCooldownReduction = 0.30;
     this.enhancedCooldownReduction = 0.30;
     this.enhancedEReduction = 0.40;
@@ -81,28 +82,30 @@ class JanModel {
       const enhanced = q.enhanced;
       q.state = "ready";
       q.q2Timer = 0;
-      q.enhanced = false;
+      q.startingFromQ1 = false;
       this.startCooldown("Q");
+      
+      q.enhanced = false;
+      // Q2에서는 더 이상 쿨감이 발생하지 않음
       return { ok: true, stage: 2, enhanced, cooldownResult: null };
     }
 
     if (q.cooldown > 0) return { ok: false, reason: "cooldown" };
 
     const enhanced = this.enhancedReady;
+    let cooldownResult = null;
 
     if (enhanced) {
       this.consumeEnhanced();
-      const cooldownResult = this.applyEnhancedCooldownReduction();
-      q.state = "q2";
-      q.q2Timer = q.q2Window;
-      q.enhanced = true;
-      return { ok: true, stage: 1, enhanced: true, cooldownResult };
+      // FIX: 여기서 드디어 Q1 시전 즉시 쿨감이 들어감!
+      cooldownResult = this.applyEnhancedCooldownReduction(); 
     }
 
     q.state = "q2";
     q.q2Timer = q.q2Window;
-    q.enhanced = false;
-    return { ok: true, stage: 1, enhanced: false, cooldownResult: null };
+    q.enhanced = enhanced;
+
+    return { ok: true, stage: 1, enhanced, cooldownResult };
   }
 
   castW() {
