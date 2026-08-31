@@ -1,4 +1,4 @@
-class YanModel {
+class JanModel {
   constructor() {
     this.maxStacks = 10;
     this.enhancedThreshold = 5;
