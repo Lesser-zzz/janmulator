@@ -20,9 +20,52 @@ function issueMove(point){state.player.destination={x:point.x,y:point.y};state.p
 function issueAttack(point){const target=nearestDummyToPoint(point);if(!target)return;state.player.destination=null;state.player.target=target;state.player.attackMove=true;state.player.windup=0;state.player.windupTarget=null;modeEl.textContent=`공격 대상 DUMMY ${target.id}`;if(attackRangeEnough(target)&&state.player.attackCooldown<=0)beginBasicAttack(target)}
 function updatePlayer(dt){const p=state.player;p.attackCooldown=Math.max(0,p.attackCooldown-dt);p.flash=Math.max(0,p.flash-dt);if(p.windup>0){p.windup-=dt;if(p.windup<=0)finishBasicAttack();return}if(p.attackMove&&p.target){const target=p.target;if(!attackRangeEnough(target)){const dx=target.x-p.x,dy=target.y-p.y,len=Math.hypot(dx,dy)||1;p.facing=Math.atan2(dy,dx);const step=Math.min(len,p.moveSpeed*dt);p.x+=dx/len*step;p.y+=dy/len*step}else if(p.attackCooldown<=0)beginBasicAttack(target);return}if(p.destination){const dx=p.destination.x-p.x,dy=p.destination.y-p.y,len=Math.hypot(dx,dy)||0;if(len<=2){p.x=p.destination.x;p.y=p.destination.y;p.destination=null;modeEl.textContent="우클릭으로 이동";return}p.facing=Math.atan2(dy,dx);const step=Math.min(len,p.moveSpeed*dt);p.x+=dx/len*step;p.y+=dy/len*step;p.x=Math.max(p.r,Math.min(canvas.width-p.r,p.x));p.y=Math.max(p.r,Math.min(canvas.height-p.r,p.y))}}
 function logCooldownChange(result){if(!result)return;const parts=[];for(const k of ["Q","W","E"]){const before=result.before[k]||0,after=result.after[k]||0;if(before>0)parts.push(`${k} ${before.toFixed(2)}→${after.toFixed(2)}`)}if(parts.length)log(`강화 쿨감 · ${parts.join(" / ")}`)}
-function qHit(stage,enhancedCast){const a=state.player.facing,cos=Math.cos(a),sin=Math.sin(a);for(const d of state.dummies){const dx=d.x-state.player.x,dy=d.y-state.player.y,forward=dx*cos+dy*sin,side=-dx*sin+dy*cos;if(forward>=0&&forward<=cfg.Q_LENGTH&&Math.abs(side)<=cfg.Q_WIDTH/2+d.r)hitDummy(d,`Q${stage}${enhancedCast?"(강화)":""}`)}}
+
+// FIX: qHit 함수가 적중 여부(boolean)를 반환하도록 수정
+function qHit(stage,enhancedCast){
+  const a=state.player.facing,cos=Math.cos(a),sin=Math.sin(a);
+  let isHit = false;
+  for(const d of state.dummies){
+    const dx=d.x-state.player.x,dy=d.y-state.player.y,forward=dx*cos+dy*sin,side=-dx*sin+dy*cos;
+    if(forward>=0&&forward<=cfg.Q_LENGTH&&Math.abs(side)<=cfg.Q_WIDTH/2+d.r){
+      hitDummy(d,`Q${stage}${enhancedCast?"(강화)":""}`);
+      isHit = true;
+    }
+  }
+  return isHit;
+}
+
 function wHit(enhancedCast){const a=state.player.facing;for(const d of state.dummies){const dx=d.x-state.player.x,dy=d.y-state.player.y,r=Math.hypot(dx,dy);if(r>cfg.W_RADIUS+d.r)continue;const delta=Math.abs(Math.atan2(Math.sin(Math.atan2(dy,dx)-a),Math.cos(Math.atan2(dy,dx)-a)));if(delta<=cfg.W_HALF_ANGLE)hitDummy(d,`W${enhancedCast?"(강화)":""}`)}}
-function castQ(){faceAt(state.mouse);const result=jan.castQ();if(!result.ok){log(`Q 사용 불가 · 쿨다운 ${jan.skills.Q.cooldown.toFixed(1)}s`);return}qHit(result.stage,result.enhanced);if(result.stage===1){log(`<b>${result.enhanced?"강화 ":""}Q1</b> · Q2 가능 ${jan.skills.Q.q2Window.toFixed(1)}초`);if(result.enhanced){log("<b>강화 Q</b> · Q1 사용 즉시 Q/W/E 전체 유효 쿨다운의 30% 차감");logCooldownChange(result.cooldownResult)}}else log(`<b>${result.enhanced?"강화 ":""}Q2</b> · Q 쿨다운 시작`)}
+
+// FIX: castQ 함수에서 강화 Q2 적중 시 E 쿨다운 초기화 로직 추가
+function castQ(){
+  faceAt(state.mouse);
+  const result=jan.castQ();
+  
+  if(!result.ok){
+    log(`Q 사용 불가 · 쿨다운 ${jan.skills.Q.cooldown.toFixed(1)}s`);
+    return;
+  }
+  
+  const hitSuccess = qHit(result.stage,result.enhanced);
+  
+  if(result.stage===1){
+    log(`<b>${result.enhanced?"강화 ":""}Q1</b> · Q2 가능 ${jan.skills.Q.q2Window.toFixed(1)}초`);
+    if(result.enhanced&&result.cooldownResult){
+      log("<b>강화 Q</b> · Q1 사용 즉시 Q/W/E 전체 유효 쿨다운의 30% 차감");
+      logCooldownChange(result.cooldownResult);
+    }
+  } else {
+    log(`<b>${result.enhanced?"강화 ":""}Q2</b> · Q 쿨다운 시작`);
+    
+    // 핵심 추가 로직: 강화 Q2가 적중했다면 E 스킬 쿨다운을 0으로 덮어씌움!
+    if(result.enhanced && hitSuccess){
+      jan.skills.E.cooldown = 0;
+      log("<b>강화 Q2 적중</b> · E 쿨다운 완전 초기화!");
+    }
+  }
+}
+
 function castW(){faceAt(state.mouse);const result=jan.castW();if(!result.ok){log(`W 사용 불가 · 쿨다운/시전 대기`);return}state.telegraph.push({type:"W",x:state.player.x,y:state.player.y,a:state.player.facing,life:jan.skills.W.castDelay,max:jan.skills.W.castDelay,enhanced:result.enhanced});log(`<b>${result.enhanced?"강화 ":""}W</b> · ${jan.skills.W.castDelay.toFixed(2)}초 후 판정`);if(result.enhanced){log("<b>강화 W</b> · W 사용 즉시 Q/W/E 전체 유효 쿨다운의 30% 차감");logCooldownChange(result.cooldownResult)}}
 function castE(){faceAt(state.mouse);const result=jan.castE();if(!result.ok){log(`E 사용 불가 · 쿨다운 ${jan.skills.E.cooldown.toFixed(1)}s`);return}state.player.attackCooldown=0;state.player.windup=0;state.player.windupTarget=null;const oldX=state.player.x,oldY=state.player.y,a=state.player.facing;state.player.x=Math.max(state.player.r,Math.min(canvas.width-state.player.r,oldX+Math.cos(a)*cfg.E_DISTANCE));state.player.y=Math.max(state.player.r,Math.min(canvas.height-state.player.r,oldY+Math.sin(a)*cfg.E_DISTANCE));state.particles.push({type:"dash",x:oldX,y:oldY,tx:state.player.x,ty:state.player.y,life:.25,max:.25});if(result.enhanced){log("<b>강화 E</b> · Q/W/E 전체 유효 쿨다운의 30% 차감");logCooldownChange(result.cooldownResult);if(result.eExtra)log(`<b>E 추가 쿨감</b> · E 전체 유효 쿨다운의 40% 차감 · ${result.eExtra.before.toFixed(2)}→${result.eExtra.after.toFixed(2)}`)}else log("<b>E</b> · 고정거리 돌진")}
 function castR(){const result=jan.castR();state.rRing={x:state.player.x,y:state.player.y,life:.45,max:.45};log(`<b>R</b> · 패시브 +5 · ${result.stacks.before} → ${result.stacks.after}`)}
