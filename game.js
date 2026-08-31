@@ -1,7 +1,7 @@
 const canvas=document.getElementById("game");
 const ctx=canvas.getContext("2d");
 
-const yan=new YanModel();
+const jan=new JanModel();
 
 const state={
   player:{
@@ -116,7 +116,7 @@ function faceAt(point){
 function hitDummy(d,source){
   if(!d)return;
 
-  const change=yan.addStack(1);
+  const change=jan.addStack(1);
 
   d.hit=.15;
   d.shake=.15;
@@ -291,17 +291,17 @@ function wHit(enhancedCast){
 function castQ(){
   faceAt(state.mouse);
 
-  const result=yan.castQ();
+  const result=jan.castQ();
 
   if(!result.ok){
-    log(`Q 사용 불가 · 쿨다운 ${yan.skills.Q.cooldown.toFixed(1)}s`);
+    log(`Q 사용 불가 · 쿨다운 ${jan.skills.Q.cooldown.toFixed(1)}s`);
     return;
   }
 
   qHit(result.stage,result.enhanced);
 
   if(result.stage===1){
-    log(`<b>${result.enhanced?"강화 ":""}Q1</b> · Q2 가능 ${yan.skills.Q.q2Window.toFixed(1)}초`);
+    log(`<b>${result.enhanced?"강화 ":""}Q1</b> · Q2 가능 ${jan.skills.Q.q2Window.toFixed(1)}초`);
   }else{
     log(`<b>${result.enhanced?"강화 ":""}Q2</b> · Q 쿨다운 시작`);
 
@@ -315,7 +315,7 @@ function castQ(){
 function castW(){
   faceAt(state.mouse);
 
-  const result=yan.castW();
+  const result=jan.castW();
 
   if(!result.ok){
     log(`W 사용 불가 · 쿨다운/시전 대기`);
@@ -327,24 +327,25 @@ function castW(){
     x:state.player.x,
     y:state.player.y,
     a:state.player.facing,
-    life:yan.skills.W.castDelay,
-    max:yan.skills.W.castDelay,
+    life:jan.skills.W.castDelay,
+    max:jan.skills.W.castDelay,
     enhanced:result.enhanced
   });
 
-  log(`<b>${result.enhanced?"강화 ":""}W</b> · ${yan.skills.W.castDelay.toFixed(2)}초 후 판정`);
+  log(`<b>${result.enhanced?"강화 ":""}W</b> · ${jan.skills.W.castDelay.toFixed(2)}초 후 판정`);
 }
 
 function castE(){
   faceAt(state.mouse);
 
-  const result=yan.castE();
+  const result=jan.castE();
 
   if(!result.ok){
-    log(`E 사용 불가 · 쿨다운 ${yan.skills.E.cooldown.toFixed(1)}s`);
+    log(`E 사용 불가 · 쿨다운 ${jan.skills.E.cooldown.toFixed(1)}s`);
     return;
   }
 
+  // E 사용 시 평타 쿨타임 및 선딜 초기화 (평캔 가능)
   state.player.attackCooldown = 0; 
   state.player.windup = 0;       
   state.player.windupTarget = null;
@@ -384,7 +385,7 @@ function castE(){
 }
 
 function castR(){
-  const result=yan.castR();
+  const result=jan.castR();
   state.rRing={x:state.player.x,y:state.player.y,life:.45,max:.45};
   log(`<b>R</b> · 패시브 +5 · ${result.stacks.before} → ${result.stacks.after}`);
 }
@@ -397,7 +398,7 @@ function castSkill(key){
 }
 
 function updateSkills(dt){
-  const qResult=yan.update(dt);
+  const qResult=jan.update(dt);
 
   if(qResult.qWindowExpired){
     log("<b>Q2 시간 만료</b> · Q 쿨다운 시작");
@@ -407,7 +408,7 @@ function updateSkills(dt){
     t.life-=dt;
 
     if(t.life<=0 && t.type==="W"){
-      const result=yan.resolveW();
+      const result=jan.resolveW();
       wHit(t.enhanced);
 
       if(result.enhanced){
@@ -566,7 +567,7 @@ function drawPlayer(){
 }
 
 function drawTelegraphs(){
-  if(yan.skills.Q.state==="q2"){
+  if(jan.skills.Q.state==="q2"){
     ctx.save();
     ctx.translate(state.player.x,state.player.y);
     ctx.rotate(state.player.facing);
@@ -650,23 +651,23 @@ function drawEffects(dt){
 }
 
 function updateUI(){
-  stackCountEl.textContent=yan.stacks;
-  enhancedEl.textContent=yan.enhancedReady
+  stackCountEl.textContent=jan.stacks;
+  enhancedEl.textContent=jan.enhancedReady
     ?"NEXT Q / W / E : ENHANCED"
     :"NEXT Q / W / E : NORMAL";
-  enhancedEl.classList.toggle("ready",yan.enhancedReady);
+  enhancedEl.classList.toggle("ready",jan.enhancedReady);
 
   stackRowEl.innerHTML="";
-  for(let i=0;i<yan.maxStacks;i++){
+  for(let i=0;i<jan.maxStacks;i++){
     const el=document.createElement("div");
-    el.className="stack-cell"+(i<yan.stacks?" filled":"");
+    el.className="stack-cell"+(i<jan.stacks?" filled":"");
     stackRowEl.appendChild(el);
   }
 
   for(const k of ["Q","W","E","R"]){
-    const skill=yan.skills[k];
+    const skill=jan.skills[k];
     const el=document.getElementById("skill"+k);
-    const canEnhance=k!=="R" && yan.enhancedReady;
+    const canEnhance=k!=="R" && jan.enhancedReady;
 
     el.className="skill"+
       ((skill.cooldown>0||skill.pending>0)?" cooldown":"")+
@@ -691,7 +692,7 @@ function updateUI(){
 }
 
 function reset(){
-  yan.reset();
+  jan.reset();
 
   state.player.x=760;
   state.player.y=420;
