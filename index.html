@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YAN TRAINER v0.8</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="game-shell">
+  <canvas id="game" width="1280" height="720"></canvas>
+
+  <div class="hud hero-hud">
+    <div class="portrait">Y</div>
+    <div>
+      <div class="hero-name">YAN</div>
+      <div class="bar"><div class="bar-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="hud passive-hud">
+    <div class="label">PASSIVE</div>
+    <div class="stack-row" id="stackRow"></div>
+    <div><b id="stackCount">0</b><span class="small"> / 10</span></div>
+    <div id="enhanced" class="enhanced">NEXT Q / W / E : NORMAL</div>
+  </div>
+
+  <div class="hud log-hud">
+    <div class="label">COMBAT LOG</div>
+    <div id="log"></div>
+  </div>
+
+  <div class="hud controls-hud">
+    <div><span>RMB</span> 이동</div>
+    <div><span>A + LMB</span> 커서 기준 가장 가까운 더미 공격</div>
+    <div><span>LMB</span> 가까운 더미 평타</div>
+    <div><span>Q/W/E/R</span> 스킬 · R = +5 스택</div>
+    <button id="reset">RESET</button>
+  </div>
+
+  <div id="skillsHud" class="hud skills-hud">
+    <div id="skillQ" class="skill"></div>
+    <div id="skillW" class="skill"></div>
+    <div id="skillE" class="skill"></div>
+    <div id="skillR" class="skill"></div>
+  </div>
+
+  <div id="mode" class="mode">우클릭으로 이동</div>
+</div>
+<script src="yan.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
