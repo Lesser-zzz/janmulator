@@ -2,8 +2,18 @@
 // D: Blink to the mouse position (3m maximum).
 // F: Uppercut the nearest dummy under/near the cursor if it is within 1.35m.
 (function(){
-  const tacticalHud = document.getElementById("skillD");
-  const weaponHud = document.getElementById("skillF");
+  const skillsHud=document.getElementById("skillsHud");
+  const tacticalHud=document.createElement("div");
+  const weaponHud=document.createElement("div");
+  tacticalHud.id="skillD";
+  weaponHud.id="skillF";
+  tacticalHud.className="skill-box";
+  weaponHud.className="skill-box";
+  if(skillsHud){
+    skillsHud.appendChild(tacticalHud);
+    skillsHud.appendChild(weaponHud);
+  }
+
   const PIXELS_PER_METER = cfg.E_DISTANCE / 3.0;
 
   function formatTime(t){
@@ -14,28 +24,23 @@
     const multiplier=jan.getMoveSpeedMultiplier();
     state.player.moveSpeed=245*multiplier;
 
-    if(tacticalHud){
-      const t=jan.tactical;
-      tacticalHud.innerHTML=`
-        <div class="skill-key">D</div>
-        ${t.enhancedTimer>0?'<div class="skill-tag">MODULE</div>':''}
-        <div class="skill-name">BLINK</div>
-        <div class="skill-time">READY</div>`;
-      tacticalHud.style.display="block";
-      tacticalHud.style.visibility="visible";
-      tacticalHud.style.opacity="1";
-    }
+    tacticalHud.innerHTML=`
+      <div class="skill-key">D</div>
+      ${jan.tactical.enhancedTimer>0?'<div class="skill-tag">MODULE</div>':''}
+      <div class="skill-name">BLINK</div>
+      <div class="skill-time">READY</div>`;
+    tacticalHud.style.display="block";
+    tacticalHud.style.visibility="visible";
+    tacticalHud.style.opacity="1";
 
-    if(weaponHud){
-      const w=jan.weapon;
-      weaponHud.innerHTML=`
-        <div class="skill-key">F</div>
-        <div class="skill-name">어퍼컷</div>
-        <div class="skill-time">${formatTime(w.cooldown)}</div>`;
-      weaponHud.style.display="block";
-      weaponHud.style.visibility="visible";
-      weaponHud.style.opacity=w.cooldown>0?"0.55":"1";
-    }
+    const w=jan.weapon;
+    weaponHud.innerHTML=`
+      <div class="skill-key">F</div>
+      <div class="skill-name">어퍼컷</div>
+      <div class="skill-time">${formatTime(w.cooldown)}</div>`;
+    weaponHud.style.display="block";
+    weaponHud.style.visibility="visible";
+    weaponHud.style.opacity=w.cooldown>0?"0.55":"1";
   }
 
   function blink(){
